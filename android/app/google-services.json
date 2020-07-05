@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "662065718590",
+    "firebase_url": "https://userapp-644ff.firebaseio.com",
+    "project_id": "userapp-644ff",
+    "storage_bucket": "userapp-644ff.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:662065718590:android:93c517f2e90ba30265b86f",
+        "android_client_info": {
+          "package_name": "com.vey.userapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "662065718590-bbpfadsq6ocsorvslhv50sgkjpekmak1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHc7tUvKB2f9bUEy4Fap9r0xl81-xTvvM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "662065718590-bbpfadsq6ocsorvslhv50sgkjpekmak1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
