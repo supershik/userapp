@@ -235,57 +235,57 @@ const CartScreen = ({ navigation, route }) => {
   }
 
   const onDeletePressed = (item, index) => {
-    let data = {
-      item: item,
-      index: index
-    }
+  //   let data = {
+  //     item: item,
+  //     index: index
+  //   }
 
-    setDeleteItem(data);
-    setAlertOneItem(true);
-  }
+  //   setDeleteItem(data);
+  //   setAlertOneItem(true);
+  // }
 
-  const onPressAllDelete = () => {
+  // const onPressAllDelete = () => {
     
-    setAlertAllItem(true);
+  //   setAlertAllItem(true);
   }
 
   const onMinusQuantityPressed = (item, index) => {
-    var tempdata = [];
-    var new_quantity = item.quantity;
-    new_quantity--;
-    if(new_quantity < 1 )  new_quantity = 1;
+    // var tempdata = [];
+    // var new_quantity = item.quantity;
+    // new_quantity--;
+    // if(new_quantity < 1 )  new_quantity = 1;
 
-    const newitem = {
-      ...item,
-      quantity: new_quantity
-    }
+    // const newitem = {
+    //   ...item,
+    //   quantity: new_quantity
+    // }
 
-    products.forEach(element => {
-      tempdata.push(element);
-    })
-    tempdata[index] = newitem;
-    getTotalPrice(tempdata);
+    // products.forEach(element => {
+    //   tempdata.push(element);
+    // })
+    // tempdata[index] = newitem;
+    // getTotalPrice(tempdata);
   }
 
   const onPlusQuantityPressed = (item, index) => {
-    var tempdata = [];
-    var maxQuantity = 0;
-    var maxQuantity = 10000000;
-    var new_quantity = item.quantity;
-    new_quantity++;
-    if(new_quantity > maxQuantity )  new_quantity = maxQuantity;
+    // var tempdata = [];
+    // var maxQuantity = 0;
+    // var maxQuantity = 10000000;
+    // var new_quantity = item.quantity;
+    // new_quantity++;
+    // if(new_quantity > maxQuantity )  new_quantity = maxQuantity;
 
-    const newitem = {
-      ...item,
-      quantity: new_quantity
-    }
+    // const newitem = {
+    //   ...item,
+    //   quantity: new_quantity
+    // }
 
-    products.forEach(element => {
-      tempdata.push(element);
-    })
+    // products.forEach(element => {
+    //   tempdata.push(element);
+    // })
 
-    tempdata[index] = newitem;
-    getTotalPrice(tempdata);
+    // tempdata[index] = newitem;
+    // getTotalPrice(tempdata);
   }
 
   const onOneUpdatePressed = (item, index) => {
