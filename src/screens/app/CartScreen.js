@@ -235,18 +235,18 @@ const CartScreen = ({ navigation, route }) => {
   }
 
   const onDeletePressed = (item, index) => {
-  //   let data = {
-  //     item: item,
-  //     index: index
-  //   }
+    let data = {
+      item: item,
+      index: index
+    }
 
-  //   setDeleteItem(data);
-  //   setAlertOneItem(true);
-  // }
+    setDeleteItem(data);
+    setAlertOneItem(true);
+  }
 
-  // const onPressAllDelete = () => {
+  const onPressAllDelete = () => {
     
-  //   setAlertAllItem(true);
+    setAlertAllItem(true);
   }
 
   const onMinusQuantityPressed = (item, index) => {
