@@ -10,13 +10,16 @@ import {
   StyleSheet,
   View,
   Text,
+  Button,
 } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 import Geolocation from '@react-native-community/geolocation';
 import AsyncStorage from '@react-native-community/async-storage'
 import Spinner from 'react-native-loading-spinner-overlay';
+import { ConfirmDialog } from 'react-native-simple-dialogs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { SHOPAPIKit, setShopClientToken } from '../../utils/apikit';
+import USERAPIKit, { SHOPAPIKit, setUserClientToken } from '../../utils/apikit';
+
 import {
   Colors,
 } from 'react-native/Libraries/NewAppScreen';
@@ -24,7 +27,7 @@ import Toast from 'react-native-simple-toast';
 
 const MapViewScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState([]);
+  const [shopdata, setData] = useState([]);
   const [markers, setMarkers] = useState([]);
   const [query, setQuery] = useState('');
 
@@ -43,7 +46,15 @@ const MapViewScreen = ({ navigation }) => {
     year: 1990
   })
   const [marginBottom, setMarginBottom] = useState(0);
-
+  
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [alertPassToSummary, setAlertPassToSummary] = useState(false);
+  const [alertNoProduct, setAlertNoProduct] = useState(false);
+  const [orderProductsbyShopid, setOrderProductsbyShopid] = useState([]);
+  const [messageContent, setMessageContent] = useState('');
+  const [msgProductExchange, setMsgProductExchange] = useState ('');
+  const [msgHomeDelivery, setMsgHomeDelivery] = useState ('');
+  const [ismanaged, setManaged] = useState(0);
   useEffect(() => {
     setShop({
       alert: false
@@ -62,17 +73,21 @@ const MapViewScreen = ({ navigation }) => {
         }
       };
 
-      Geolocation.getCurrentPosition(info => 
-        {
-          if(info.coords != undefined){
-            setRegion({latitude: info.coords.latitude, longitude: info.coords.longitude})                          
-            bootstrapAsync(info.coords);
-          }
+      Geolocation.getCurrentPosition(
+        //Will give you the current location
+        (position) => {
+            if(position.coords != undefined) {
+              setRegion({latitude: position.coords.latitude, longitude: position.coords.longitude})                          
+              bootstrapAsync(position.coords);
+            }
         },
         (error) => {
-          console.log(error); 
+          console.log(error);
         },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 });
+        {
+           enableHighAccuracy: false, timeout: 20000, maximumAge: 1000
+        }
+     );
     });
     return unsubscribe;
 
@@ -97,7 +112,6 @@ const MapViewScreen = ({ navigation }) => {
         setLoading(false);
         Toast.show(message);
       }
-
       setLoading(true);
       SHOPAPIKit.post('/shopoperation/near', payload)
         .then(onSuccess)
@@ -116,10 +130,13 @@ const MapViewScreen = ({ navigation }) => {
 
   const onPressMarker = (index) => {
     console.log("marker index=" + index);
-    //setShop({ alert: true, index: index, shopname: data[index].shopname, bulkorder: data[index].bulkorder, wholesaler: data[index].wholesaler, year: data[index].Incorporationyear });
-    let shopInfo = data[index];
-    navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, fromView: 'MapView'});
-    console.log('pressed marker: ', {shopInfo: shopInfo, fromView: 'MapView'});
+    setSelectedIndex(index);
+    let message = "Product price may vary as per shop";
+    if( shopdata[index].shopcategoryid == 8 )
+      message = "Product price may vary as per shop.\nAge proof will be asked at time of pickup (ONlY 18+ IS ALLOWED)";
+
+    setMessageContent(message);
+    getProductbyShopid(index);
   }
 
   const onWholeSalerPressed = () => {
@@ -164,6 +181,75 @@ const MapViewScreen = ({ navigation }) => {
       setData([]);
       updateShopList([]);
     }
+  }
+
+  const openOrderSummary = () => {
+    if( selectedIndex < 0 )
+      return;
+
+    setAlertPassToSummary(false);
+
+    let shopInfo = shopdata[selectedIndex];
+    console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: ismanaged, fromView: 'MapView'});
+    navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: ismanaged, fromView: 'MapView'});
+  }
+
+  // call only to get ismanaged
+  const getProductbyShopid = async(index) => {
+    let shopInfo = shopdata[index];
+    let userToken = null;
+        try {
+          userToken = await AsyncStorage.getItem('userToken')
+        } catch (e) {
+          console.log(e);
+        }
+        if (userToken != null) {
+          const onSuccess = ({ data }) => {
+            setLoading(false);
+            setOrderProductsbyShopid(data);
+
+            console.log('------------------ shop id --------------');
+            console.log(data);
+            if( data.productexchange == 1 )
+              setMsgProductExchange("Product exchange is allowed as per shop policy.");
+            else
+              setMsgProductExchange("Product exchange is not allowed as per shop policy.");
+            if( data.homedelivery == 1 )
+              setMsgHomeDelivery("Home delivery is available");
+            else
+              setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
+            
+            setManaged(data.ismanaged); // is used in order summary
+            
+            console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: data.ismanaged, fromView: 'MapView'});
+            navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: data.ismanaged, fromView: 'MapView'});
+
+            // let isProduct = true;
+            // if( data.products.length < 1 )
+            //   isProduct = false;
+
+            // if( isProduct == false )
+            //   setAlertNoProduct(true);
+            // else
+            //   setAlertPassToSummary(true);
+          }
+          const onFailure = error => {
+            setLoading(false);
+            // setAlertNoProduct(true);
+            setOrderProductsbyShopid([]);
+          
+            console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: 0, fromView: 'MapView'});
+            navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: 0, fromView: 'MapView'});
+          }
+
+          setLoading(true);
+          USERAPIKit.get('/user/cart/detail/shop/' + shopdata[index].shopid)
+            .then(onSuccess)
+            .catch(onFailure);
+        }
+        else {
+          setOrderProductsbyShopid([]);
+        }
   }
 
   return (
@@ -236,6 +322,49 @@ const MapViewScreen = ({ navigation }) => {
           </View>
         </Dialog>
       </View>
+      <ConfirmDialog
+          dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
+          titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
+          title={messageContent}
+          visible={alertPassToSummary}
+          onTouchOutside={() => setAlertPassToSummary(false)}
+        >
+        <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
+          <Text style={{textAlign: "center"}}>
+            {msgProductExchange}
+          </Text>
+          <Text style={{marginTop: 10, textAlign: "center"}}>
+            {msgHomeDelivery}
+          </Text>
+
+          <View style={{marginTop: 20, marginHorizontal: 30}}>
+              <Button
+                buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
+                title="Ok"
+                titleStyle={{ fontSize: 14 }}
+                onPress={() => openOrderSummary()}
+            />
+          </View>
+        </View>
+      </ConfirmDialog>
+      <ConfirmDialog
+                dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
+                titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
+                title="No product for this shop in cart."
+                visible={alertNoProduct}
+                onTouchOutside={() => setAlertNoProduct(false)}
+            >
+              <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
+                <View style={{marginTop: 0, marginHorizontal: 30}}>
+                    <Button
+                      buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
+                      title="Ok"
+                      titleStyle={{ fontSize: 14 }}
+                      onPress={() => setAlertNoProduct(false)}
+                  />
+                </View>
+              </View>
+      </ConfirmDialog>
     </>
   );
 };

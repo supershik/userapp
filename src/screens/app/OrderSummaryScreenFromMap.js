@@ -33,6 +33,7 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
     shopcode: route.params.shopInfo.shopcode,
     discount: route.params.shopInfo.discount
   });
+  const [ismanaged] = useState(route.params.ismanaged);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(route.params.orderProducts);
   const [subtotal, setSubTotal] = useState(0);
@@ -46,7 +47,9 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
   const [showTime, setShowTime] = useState(false);
   const [orderpickupdate, setOrderPickupDate] = useState(moment(new Date()).format("YYYY-MM-DD"));  // u
   const [orderpickuptime, setOrderPickupTime] = useState(moment(new Date()).format("HH:mm:ss")); // not utc
-
+  const [textLoadMessage, setTextLoadMessage] = useState('');
+  const [alertOtherShopSelect, setAlertOtherShopSelect] = useState(false);
+  
   const navigationiOptions = () => {
     navigation.setOptions({ 
         title: 'Order Summary',
@@ -129,6 +132,12 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
     setTotal(Number((tempTotal - orderdiscount).toFixed(2)));
     setDiscount(orderdiscount);
   }
+
+  const onPressOtherShopOk = () => {
+    setAlertOtherShopSelect(false);
+    navigation.popToTop();
+  }
+
   // Confirm Place Order
   const confirmPlaceOrder = () => {
     let date = moment().add(2, 'hours');
@@ -153,16 +162,25 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
     });
 
     const onSuccess = ({ data }) => {
-      setLoading(false);
-      navigation.dispatch(StackActions.popToTop());
-      navigation.navigate('Home');
-      Toast.show('Order placed successfully.');
+
+      if( ismanaged == 1 ) {
+        //https://ordermoduleapi1.herokuapp.com/userorder/order/<orderref> 
+        checkShopInventory(data.orderref);  // go to live order detail view
+      }
+      else {
+        Toast.show(data.message);
+        setTextLoadMessage("");
+        navigation.popToTop();  // go to Home view
+        navigation.navigate('Home');
+      }
     }
+    
     const onFailure = error => {
       setLoading(false);
       console.log(error)
       Toast.show('Failed to place.');
     }
+
     setLoading(true);
 
     SHOPAPIKit.post('/userorder/place', products)
@@ -170,6 +188,42 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
       .catch(onFailure);
 
     setAlert(false)
+  }
+
+  const checkShopInventory = async(orderref) => {
+    const onSuccess = ({ data }) => {
+      setLoading(false);
+      console.log('------------------ orderref successfull in shop inventory');
+      console.log(data);
+      setTextLoadMessage("");
+
+      if( data.statusid == 21 ) // noe available currently
+        setAlertOtherShopSelect(true);
+      else
+        gotoLiveOrderDetail(orderref);
+    }
+
+    const onFailure = error => {
+      setLoading(false);
+      console.log(error);
+      setTextLoadMessage("");
+      navigation.popToTop();  // go to Map view
+      navigation.navigate("Home");
+    }
+
+    setLoading(true);
+    setTextLoadMessage("Checking shop inventory");
+    SHOPAPIKit.get('/userorder/order/' + orderref)
+      .then(onSuccess)
+      .catch(onFailure);
+  }
+
+  const gotoLiveOrderDetail = (orderref) => {
+    let item = {
+      orderref
+    }
+    navigation.popToTop();
+    navigation.navigate('Live Order Detail', item);
   }
 
   const orderProduct = () => {
@@ -268,7 +322,7 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
     <>
       <View style={styles.container}>
         <Spinner
-          visible={loading} size="large" style={styles.spinnerStyle} />
+          visible={loading} size="large" textStyle = {{ fontSize: 18, fontWeight: "bold", color: "rgba(255,255,255,1)" }} textContent={textLoadMessage} />
         <View style={{marginBottom: 10}}/>
         <FlatList
           data={data}
@@ -329,7 +383,7 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
         {
           data.length != 0 ?
             <View style={styles.buttonContainer}>
-              <Button title='Place Order' onPress={orderProduct} />
+              <Button title='Check availability in shop' onPress={orderProduct} />
             </View> : null
         }
         <View>
@@ -355,6 +409,19 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
                       onPress={() => confirmPlaceOrder()}
                   />
                 </View>
+            </View>
+            </ConfirmDialog>
+            <ConfirmDialog
+                dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, height: 180, alignSelf: "center" }}
+                titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
+                title={"Items are not available currently. Please check with different shop"}
+                visible={alertOtherShopSelect}
+            >
+            <View style={{alignSelf: "center", width: 100}}>
+              <Button
+                  title="Ok"
+                  onPress={() => onPressOtherShopOk()}
+              />
             </View>
             </ConfirmDialog>
         </View>

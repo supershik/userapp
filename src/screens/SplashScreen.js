@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage'
 import USERAPIKit, { setUserClientToken, setShopClientToken, setCashFreeToken } from '../utils/apikit';
-import Logo from "../res/assets/images/logo.png"
+import imgSplash from "../res/assets/images/splash.png"
 import { AuthContext } from '../utils/authContext';
 
 const SplashScreen = props => {
@@ -10,7 +10,7 @@ const SplashScreen = props => {
   useEffect(() => {
     setTimeout(() => {
       bootstrapAsync();
-    }, 1500);
+    }, 2000);
     const bootstrapAsync = async () => {
       let userToken = null;
       let mobile = null;
@@ -54,7 +54,7 @@ const SplashScreen = props => {
         { justifyContent: 'center', alignItems: 'center' }
       ]}
     >
-      <Image style={{ width: 250, height: 250, resizeMode: 'contain' }} source={Logo} />
+      <Image style={{ width: 250, height: 285, resizeMode: 'stretch' }} source={imgSplash} />
     </View>
   )
 }

@@ -145,9 +145,7 @@ const HomeScreen = ({ navigation, route }) => {
   const onPressSearchShop = () => {
     navigation.navigate('Map View');
   }
-  const onPressCashfree = () => {
-    navigation.navigate('Cashfree');
-  }
+
   const renderItem = ({ item, index }) => {
     if(item.empty === true) {
       return <View style = {[styles.listItemEmpty, styles.itemInvisible]} />;

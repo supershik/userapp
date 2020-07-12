@@ -32,6 +32,7 @@ const SearchScreenFromMap = ({ navigation, route }) => {
   const [alert, setAlert] = useState(false);
   const [shopInfo] = useState(route.params.shopInfo);
   const [fromView] = useState(route.params.fromView);
+  const [ismanaged] = useState(route.params.ismanaged);
 
   const navigationiOptions = () => {
     navigation.setOptions({ 
@@ -46,7 +47,7 @@ const SearchScreenFromMap = ({ navigation, route }) => {
       headerRight: () => (
         <View style={{flexDirection: 'row', alignSelf: "center", marginRight: 5}}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Cart Screen From Map', {shopInfo: shopInfo, fromView: fromView})}>
+            onPress={() => navigation.navigate('Cart Screen From Map', {shopInfo: shopInfo, ismanaged: ismanaged, fromView: fromView})}>
             <Image
               source={addcart}
               style={styles.addCartIcon}
@@ -74,7 +75,7 @@ const SearchScreenFromMap = ({ navigation, route }) => {
   const handleSearch = (query) => {
     setQuery(query);
     if (query.length >= 3) {
-      const onSuccess = ({ data }) => {                
+      const onSuccess = ({ data }) => {
         setData(data.products);
       }
       const onFailure = error => {

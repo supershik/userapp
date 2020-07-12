@@ -35,6 +35,7 @@ import CartScreenFromCategoriesHome from './CartScreenFromCategoriesHome';
 import ShopMapScreenFromCart from './ShopMapScreenFromCart';
 import OrderSummaryScreenFromCart from './OrderSummaryScreenFromCart';
 import CashfreePayment from './CashfreePayment';
+import CashfreeRefund from './CashfreeRefund';
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -63,6 +64,28 @@ const HomeStackScreen = ({ navigation }) => {
         name="Order Summary"
         component={OrderSummaryScreen}
       />
+      <Stack.Screen
+        name="Live Order Detail"
+        component={LiveOrderDetailScreen}
+        options={{
+          headerStyle: {
+            backgroundColor: colors.primary,
+          },
+          headerTintColor: '#fff',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
+      <Stack.Screen
+        name="Payment"
+        component={CashfreePayment}
+      />
+      <Stack.Screen
+        name="Refund"
+        component={CashfreeRefund}
+      />
+      
     </Stack.Navigator>
   );
 };
@@ -143,9 +166,14 @@ const LiveOrderStackScreen = ({ navigation }) => {
         }}
       />
       <Stack.Screen
-        name="Cashfree"
+        name="Payment"
         component={CashfreePayment}
       />
+      <Stack.Screen
+        name="Refund"
+        component={CashfreeRefund}
+      />
+      
     </Stack.Navigator>
   );
 };

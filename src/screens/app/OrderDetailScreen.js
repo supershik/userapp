@@ -113,6 +113,7 @@ const OrderDetailScreen = ({ navigation, route }) => {
         }
         if (userToken != null) {
           const onSuccess = ({ data }) => {
+            console.log(data);
             setLoading(false);
             setOrder(data);
             setData(data.orderdetails);
@@ -182,11 +183,20 @@ const OrderDetailScreen = ({ navigation, route }) => {
             <View style={{ height: 20, marginRight: 10, marginBottom: 5, }}>
               <Text style={{ fontSize: 15 }}>{item.quantity} pc</Text>
             </View>
-            <MaterialCommunityIcons
-              style = {{paddingRight: 7}}
-              name="check-circle-outline"
-              color="green"
-              size={20}/>
+            {item.available ? (
+                <MaterialCommunityIcons
+                style = {{paddingRight: 8}}
+                name="check-circle-outline"
+                color="green"
+                size={20}/>
+              ) : (
+                  <MaterialCommunityIcons
+                  style = {{paddingRight: 8}}
+                  name="checkbox-blank-circle-outline"
+                  color="green"
+                  size={20}/>
+              )
+            }
           </View>
         </View>
       </View>

@@ -38,6 +38,7 @@ const CartScreenFromMap = ({ navigation, route }) => {
   const [alertAllItem, setAlertAllItem] = useState(false);
   const [shopInfo] = useState(route.params?.shopInfo);
   const [fromView] = useState(route.params?.fromView);
+  const [ismanaged] = useState(route.params.ismanaged);
 
   const navigationiOptions = () => {
     navigation.setOptions({ 
@@ -152,7 +153,7 @@ const CartScreenFromMap = ({ navigation, route }) => {
 
   const orderProduct = () => {
     if( fromView == 'MapView' )
-      navigation.navigate('Order Summary From Map', {orderProducts: products, shopInfo: shopInfo, fromView: fromView});
+      navigation.navigate('Order Summary From Map', {orderProducts: products, shopInfo: shopInfo, ismanaged: ismanaged, fromView: fromView});
   }
 
   const renderCircleView = (item) => {

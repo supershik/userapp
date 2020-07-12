@@ -41,6 +41,9 @@ const ShopMapScreenFromCart = ({ navigation, route }) => {
   const [markers, setMarkers] = useState([]);
   const [orderProductsbyShopid, setOrderProductsbyShopid] = useState([]);
   const [messageContent, setMessageContent] = useState('');
+  const [msgProductExchange, setMsgProductExchange] = useState ('');
+  const [msgHomeDelivery, setMsgHomeDelivery] = useState ('');
+
   const [region, setRegion] = useState({
     latitude: 15.480808256,
     longitude: 73.82310486,
@@ -117,14 +120,13 @@ const ShopMapScreenFromCart = ({ navigation, route }) => {
             setRegion({latitude: info.coords.latitude, longitude: info.coords.longitude});
             setPayload({latitude:info.coords.latitude, longitude: info.coords.longitude});
             bootstrapAsync(info.coords);
-            console.log(info.coords);
           }
         },
         (error) => {
           console.log(error); 
           bootstrapAsync();
         },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 });
+        { enableHighAccuracy: false, timeout: 20000, maximumAge: 1000 });
     });
     return unsubscribe;
 
@@ -170,16 +172,28 @@ const ShopMapScreenFromCart = ({ navigation, route }) => {
           const onSuccess = ({ data }) => {
             setLoading(false);
             setOrderProductsbyShopid(data);
+            
+            if( data.productexchange == 1 )
+              setMsgProductExchange("Product exchange is allowed as per shop policy.");
+            else
+              setMsgProductExchange("Product exchange is not allowed as per shop policy.");
+            if( data.homedelivery == 1 )
+              setMsgHomeDelivery("Home delivery is available");
+            else
+              setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
+
             if (data.products.length < 1)
-              setAlertNoProduct(true);            
+              setAlertNoProduct(true);
             else
               setAlertPassToSummary(true);
           }
+
           const onFailure = error => {
             setLoading(false);
             setAlertNoProduct(true);
             setOrderProductsbyShopid([]);
           }
+          
           setLoading(true);
           USERAPIKit.get('/user/cart/detail/shop/' + shopdata[index].shopid)
             .then(onSuccess)
@@ -239,7 +253,6 @@ const ShopMapScreenFromCart = ({ navigation, route }) => {
     }
 
     setLoading(true);
-    console.log(myCoords);
     var requestUrl = '/shopoperation/discount';
     if(value == 0){
       requestUrl = '/shopoperation/discount';
@@ -313,12 +326,19 @@ const ShopMapScreenFromCart = ({ navigation, route }) => {
             <ConfirmDialog
                 dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
                 titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
-                title = {messageContent}
+                title={messageContent}
                 visible={alertPassToSummary}
                 onTouchOutside={() => setAlertPassToSummary(false)}
             >
               <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
-                <View style={{marginTop: 0, marginHorizontal: 30}}>
+                <Text style={{textAlign: "center"}}>
+                  {msgProductExchange}
+                </Text>
+                <Text style={{marginTop: 10, textAlign: "center"}}>
+                  {msgHomeDelivery}
+                </Text>
+
+                <View style={{marginTop: 20, marginHorizontal: 30}}>
                     <Button
                       buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
                       title="Ok"
@@ -348,7 +368,18 @@ const ShopMapScreenFromCart = ({ navigation, route }) => {
               </View>
             </ConfirmDialog>
         </View>
-        <SwitchSelector options={options} initial={1} onPress={value => onSwitchChange(value)} />
+        <SwitchSelector
+          textColor={'#4cb344'} //'#7a44cf'
+          selectedColor={Colors.white}
+          buttonColor={'#4cb344'}
+          borderColor={'#4cb344'}
+          backgroundColor={'rgba(255,255,255,1)'}
+          style={{backgroundColor: 'rgba(255,255,255,1)', opacity: 1}}
+          hasPadding
+          options={options}
+          initial={1}
+          onPress={value => onSwitchChange(value)}
+        />
       </View>
     </>
   );

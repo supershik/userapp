@@ -256,10 +256,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-
     logoContainer: {
-        width: 200,
-        height: 200,
+        width: 160,
+        height: 182,
+        resizeMode: "stretch",
+        marginVertical: 20,
     },
     inputView: {
         width: "90%",

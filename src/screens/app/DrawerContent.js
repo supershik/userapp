@@ -1,7 +1,8 @@
 import React, {useContext, useEffect, useState} from 'react';
 import {
     StyleSheet,
-    View
+    View,
+    Image
 } from 'react-native';
 import {
     Avatar,
@@ -65,14 +66,18 @@ export function DrawContent(props) {
     }
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#fff' }}>
             <DrawerContentScrollView {...props}>
                 <View style={styles.drawerContent}>
                     <View style={styles.userInfoSection}>
                         <View style={{ flexDirection: 'row', marginTop: 15 }}>
-                            <Avatar.Image
+                        {/* <Avatar.Image
+                            source={Logo}
+                                size={50} /> */}
+                            <Image
                                 source={Logo}
-                                size={50} />
+                                style={{marginTop: 8, width: 40, height: 45, resizeMode: 'stretch'}}
+                            />
                             <View style={{ marginLeft: 15, flexDirection: 'column' }}>
                                 <Title style={styles.title}>{username}</Title>
                                 <Caption style={styles.caption}>{phonenumber}</Caption>

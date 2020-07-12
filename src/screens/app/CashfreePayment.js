@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Text, View, TouchableOpacity, StyleSheet, Image, Dimensions } from 'react-native';
+import {Text, View, TouchableOpacity, StyleSheet, Image, Dimensions, Button } from 'react-native';
 import CashfreePG from 'cashfreereactnativepg';
 import base64 from 'base-64';
 import { or } from 'react-native-reanimated';
@@ -10,11 +10,12 @@ import { colors } from '../../res/style/colors'
 import { CASHFREEAPIKit, setCashFreeToken } from '../../utils/apikit';
 import icon_confirmation from '../../res/assets/images/icon_confirmation.gif'
 import icon_error from '../../res/assets/images/icon_error.jpg'
+import moment from 'moment';
 
 const CashfreePayment = ({ navigation, route }) => {
     const [loading, setLoading] = useState(false);
     const [errMsg, setErrMsg] = useState('');
-    const [payload] = useState(route.params.payload);
+    const [pickDateTime] = useState(route.params.orderpickuptime);
     const [order, setOrder]  = useState({
         //appId: '19149069bd004065084653ce894191',
         // orderId: "1030",
@@ -23,9 +24,9 @@ const CashfreePayment = ({ navigation, route }) => {
         appId: "",  // obtained from server
         orderId: route.params.orderId,
         orderAmount: route.params.orderAmount.toString(),
-        customerName: "Salah",
-        customerEmail: "noemail@vay.com",
-        customerPhone: "9177777321",
+        customerName: "",
+        customerEmail: "",
+        customerPhone: "",
         tokenData: undefined, // obtained from server
         orderCurrency: "INR",
         orderNote: "This is an order note",
@@ -103,26 +104,37 @@ const CashfreePayment = ({ navigation, route }) => {
           console.log(e);
         }
         if (userToken != null) {
+          console.log('------ get token ------');
+          let orderres = newOrder.orderId.split("-");
+          const orderId = orderres[orderres.length-1];  // extract 1033 from VE2006-1033
+          console.log(orderId);
+
           const onSuccess = ({ data }) => {
             setLoading(false);
-            if(data.appId == undefined || data.token == undefined)
+            console.log(data);
+            if(data.appid == undefined || data.token == undefined)
             {
-                Toast.show("Token or appId failed. \n Try again");
-                setErrMsg("Token or appId failed. \n Try again");
+                //Toast.show("Token or appId failed. \n Please try again");
+                setErrMsg("Token or appId failed. \n Please try again");
                 setShowPaymentFailedDialog(true);
-                setTimeout ( () => {
-                    navigation.goBack();
-                    setShowPaymentFailedDialog(false);
-                }, 3000)
+                // setTimeout ( () => {
+                //     navigation.goBack();
+                //     setShowPaymentFailedDialog(false);
+                // }, 3000)
+
                 return;
             }
 
             const tempOrder = newOrder;
             tempOrder.tokenData = data.token;
             tempOrder.appId = data.appid;
+            tempOrder.orderId = orderId;    // orderId is integer
             setOrder(tempOrder);
-            setToken(data.token);
+            setToken(data.token);   // go ahead Cashfre
+            console.log('---------------------- Token successfull -------------------');
             console.log(data);
+            console.log('---------------------- Cashfree data to pay -------------------');
+            console.log(tempOrder);
           }
           const onFailure = (error) => {
             console.log(error);
@@ -134,19 +146,18 @@ const CashfreePayment = ({ navigation, route }) => {
               console.log(error);
               
             console.log('------ token failed ------');
-            Toast.show("Token failed. \n Try again");
-            setErrMsg("Token failed. \n Try again");
+            //Toast.show("Token failed. \n Please try again");
+            setErrMsg("Token failed. \n Please try again");
             setShowPaymentFailedDialog(true);
-            setTimeout ( () => {
-                navigation.goBack();
-                setShowPaymentFailedDialog(false);
-            }, 3000)
+            // setTimeout ( () => {
+            //     navigation.goBack();
+            //     setShowPaymentFailedDialog(false);
+            // }, 3000)
           }
           
           setLoading(true);
-          
-          console.log('------ get token ------');
-          CASHFREEAPIKit.post('/transaction/token/'+ newOrder.orderId)
+         
+          CASHFREEAPIKit.post('/transaction/token/'+ orderId)
             .then(onSuccess)
             .catch(onFailure);
         }
@@ -289,14 +300,14 @@ const CashfreePayment = ({ navigation, route }) => {
             setErrMsg(msg);
             if( msg.length > 0 )
             {
-                Toast.show(jsondata.txStatus);
+                //Toast.show(jsondata.txStatus);
                 setErrMsg('Payment failed \n\n'+ msg);
 
                 setShowPaymentFailedDialog(true);
-                setTimeout ( () => {
-                    navigation.goBack();
-                    setShowPaymentFailedDialog(false);
-                }, 3000)
+                // setTimeout ( () => {
+                //     navigation.goBack();
+                //     setShowPaymentFailedDialog(false);
+                // }, 3000)
                 return;
             }
 
@@ -321,63 +332,98 @@ const CashfreePayment = ({ navigation, route }) => {
 
     const checkPaymentStatus = (data)=> {
         const jsondata = JSON.parse(data);
-
+        console.log('---------------------- 1 -------------------');
+        setToken(undefined);    // only call CashfreePG one time in render function
+        console.log('---------------------- 1 -------------------');
         if( data == null || data == undefined )
             return;
         if( jsondata.txStatus == undefined || jsondata.txStatus == "" )
             return;
         if(confirmation === true)
             return;
+        
+        console.log('-------- confirmation --------');
+        console.log(data);
         // When is succeeded from Cashfree server
         if( jsondata.txStatus == "SUCCESS") {
-            requestPaymentConfirmation();
+            requestPaymentConfirmation(jsondata);
             return;
         }
         else {
+            console.log('---------------------- 6 (confirmation failed)-------------------');
+            console.log(jsondata);
             if( jsondata.txStatus == "FAILED" ) {
-                Toast.show(jsondata.txStatus);
-                setErrMsg('Payment failed \n\n Please try again');
+                //Toast.show(jsondata.txStatus);
+                //setErrMsg('Payment failed \n\n Please try again');
+                setErrMsg(jsondata.txMsg);
             }
             else if( jsondata.txStatus == "CANCELLED" ) {
-                Toast.show(jsondata.txStatus);
-                setErrMsg('Payment cancelled \n\n Please try again');
+                //Toast.show(jsondata.txStatus);
+                // setErrMsg('Payment cancelled \n\n Please try again');
+                setErrMsg(jsondata.txMsg);
             }
             else {
-                Toast.show(jsondata.txStatus);
-                setErrMsg('Payment confirmation failed');
+                //Toast.show(jsondata.txStatus);
+                // setErrMsg('Payment confirmation failed \n\n Please try again');
+                setErrMsg(jsondata.txMsg);
             }
 
             setShowPaymentFailedDialog(true);
-            setTimeout ( () => {
-                navigation.goBack();
-                setShowPaymentFailedDialog(false);
-            }, 3000)
+            // setTimeout ( () => {
+            //     navigation.goBack();
+            //     setShowPaymentFailedDialog(false);
+            // }, 5000)
         }
     }
 
-    const requestPaymentConfirmation = () => {
+    const requestPaymentConfirmation = (jsondata) => {
         const onSuccess = ({ data }) => {   // And also succeeded from our server (confirmation api, duplicated check)
             setLoading(false);
+            console.log('---------------------- 4 -------------------');
             console.log(data);
-            Toast.show("Payment successfully completed");
+            //Toast.show("Payment successfully completed");
 
+            let currentDate = new Date();
+            let date = moment.utc(pickDateTime).format("YYYY-MM-DD");
+            let time = moment.utc(pickDateTime).format("HH:mm:ss");
+            var p1 = date.split("-");
+            var p2 = time.split(":");
+            var datetime = new Date(p1[0],p1[1]-1,p1[2],p2[0],p2[1],p2[2]);
+
+            console.log('-------------- Date time -------------------');
+            console.log(moment(currentDate).format("YYYY-MM-DD HH:mm:ss"));
+            console.log(moment(datetime).format("YYYY-MM-DD HH:mm:ss"));
+            
+            var msDiff = datetime.getTime() - currentDate.getTime(); 
+            var remainHoursTillCurrent = msDiff / (1000 * 60 * 60 ); // hour difference
+            console.log(remainHoursTillCurrent);
+            
+            datetime.setHours(datetime.getHours(), datetime.getMinutes()-60, 0); // plus 30 min to current time
+            let cancellationdatatime = moment(datetime).format("YYYY-MM-DD HH:mm:ss");
+            let msg = "";
+            if( remainHoursTillCurrent < 1 )
+                msg = "Order placed successfully.\n You will be notified for order updates. \n No cancellation is allowed. \n Pickup time: " + pickDateTime;
+            else
+                msg = "Order placed successfully.\n You will be notified for order updates. \n Cancellation is only allowed till " + cancellationdatatime + " and 15% will be deducted for service charge, After that no cancellation is allowed. \n Pickup time: " + pickDateTime;
+            
+            setErrMsg(msg);
             setShowPaymentSuccessDialog(true);
-            setTimeout ( () => {
-                navigation.popToTop();
-                navigation.navigate('Home');
-                setShowPaymentSuccessDialog(false);
-            }, 3000)
+            // setTimeout ( () => {
+            //     navigation.popToTop();
+            //     navigation.navigate('Home');
+            //     setShowPaymentSuccessDialog(false);
+            // }, 3000)
         }
         const onFailure = error => {    // succeeded from Cashfree server but failed from our server(Network error)
             console.log(error);
             setLoading(false);
-
+            console.log('---------------------- 5 -------------------');
             setErrMsg('Payment confirmation failed');
             setShowPaymentFailedDialog(true);
-            setTimeout ( () => {
-                navigation.goBack();
-                setShowPaymentFailedDialog(false);
-            }, 3000)
+            // setTimeout ( () => {
+            //     navigation.goBack();
+            //     setShowPaymentFailedDialog(false);
+            // }, 3000)
         }
 
         const payload = {
@@ -388,21 +434,30 @@ const CashfreePayment = ({ navigation, route }) => {
 
         setLoading(true);
         setConfirmation(true);
+        console.log('---------------------- 3 -------------------');
         CASHFREEAPIKit.post('/transaction/status/confirmation/user', payload)
         .then(onSuccess)
         .catch(onFailure);
     }
 
+    const onPressSuccessOK = () => {
+        navigation.popToTop();
+        navigation.navigate('Home');
+        setShowPaymentSuccessDialog(false);
+    }
+    
+    const onPressFailedOK = () => {
+        navigation.goBack();
+        setShowPaymentFailedDialog(false);
+    }
+    
     return (
-        <>
+      <>
         <Spinner
-          visible={loading} size="large" style={styles.spinnerStyle} />
-        {
-            token == undefined ? 
-                <Text style={styles.errMsg}>{errMsg}</Text>
-            :
+            visible={loading} size="large" style={styles.spinnerStyle} />
+        { token != undefined ? 
             <View style={styles.container}>
-                {/* <CashfreePG
+                <CashfreePG
                     appId={order.appId}
                     orderId={order.orderId}
                     orderAmount ={order.orderAmount}
@@ -431,45 +486,52 @@ const CashfreePayment = ({ navigation, route }) => {
                     paymentCode = "3333"
                     //paymentCode = "4001"
                     upi_vpa="testsuccess@gocash"
-                /> */}
-                {showPaymentSuccess ? 
-                    <View style={{flex: 1, flexDirection: "column"}}>
-                        <View style={styles.imageConfirm}>
-                            <Image
-                                source={icon_confirmation}
-                                style={styles.image}
-                            />
-                        </View>
-                        <View style={styles.textSuccess}>
-                            <Text style={{marginTop: 50, fontSize: 24, fontWeight: "bold", color: 'rgba(0,182,0,1)', textAlign: "center"}}>
-                                PAYMENT SUCCESSFULL
-                            </Text>
-                        </View>
-                    </View>
-                    // <Text style={styles.errMsg}>{responseData}</Text>
-                : null
-                }
-                {showPaymentFailed ? 
-                    <View style={{flex: 1, flexDirection: "column"}}>
-                        <View style={styles.imageConfirm}>
-                            <Image
-                                source={icon_error}
-                                style={styles.image}
-                            />
-                        </View>
-                        <View style={styles.textSuccess}>
-                            <Text style={{marginTop: 50, fontSize: 24, fontWeight: "bold", color: 'rgba(0,0,0,0.5)', textAlign: "center"}}>
-                                {errMsg}
-                            </Text>
-                        </View>
-                    </View>
-                    // <Text style={styles.errMsg}>{responseData}</Text>
-                : null
-                }
-                
-            </View>
+                />
+            </View> : null
         }
-    </>
+        { showPaymentSuccess ? 
+            <View style={{flex: 1, flexDirection: "column"}}>
+                <View style={styles.imageConfirm}>
+                    <Image
+                        source={icon_confirmation}
+                        style={styles.image}
+                    />
+                </View>
+                <View style={styles.textSuccess}>
+                    <Text style={{marginTop: 0, fontSize: 24, fontWeight: "bold", color: 'rgba(0,182,0,1)', textAlign: "center"}}>
+                        PAYMENT SUCCESSFULL
+                    </Text>
+                    <Text style={{lineHeight: 25, marginTop: 20, fontSize: 16, color: 'rgba(0,0,0,1)', textAlign: "center"}}>
+                        {errMsg}
+                    </Text>
+                    <View style={styles.buttonContainer}>
+                        <Button title='Ok' onPress={onPressSuccessOK}/>
+                    </View>
+                </View>
+            </View> : null
+        }
+        { showPaymentFailed ? 
+            <View style={{flex: 1, flexDirection: "column"}}>
+                <View style={styles.imageConfirm}>
+                    <Image
+                        source={icon_error}
+                        style={styles.image}
+                    />
+                </View>
+                <View style={styles.textSuccess}>
+                    <Text style={{marginTop: 10, fontSize: 24, fontWeight: "bold", color: 'rgba(0,0,0,0.7)', textAlign: "center"}}>
+                        PAYMENT FAILED
+                    </Text>
+                    <Text style={{lineHeight: 25, marginTop: 50, fontSize: 16, color: 'rgba(0,0,0,1)', textAlign: "center"}}>
+                        {errMsg}
+                    </Text>
+                    <View style={styles.buttonContainer}>
+                        <Button title='Ok' onPress={onPressFailedOK}/>
+                    </View>
+                </View>
+            </View> : null
+        }
+      </>
     );
 };
 
@@ -512,7 +574,13 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         backgroundColor: '#fff'
-    }
+    },
+    buttonContainer: {
+        flex: 1,
+        height: 35,
+        justifyContent: 'center',
+        width: 80,
+      },
   })
 /*
 <Text>{JSON.stringify(urlResponse)}</Text>

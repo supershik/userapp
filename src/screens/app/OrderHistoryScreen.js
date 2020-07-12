@@ -108,9 +108,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: 'rgba(64,150,70,1)',
+    borderColor: '#ff00f6',
     flexDirection: 'row',
-    backgroundColor: 'rgba(220,255,233,1)',
+    backgroundColor: '#ffe6fe',
   },
   itemGroup: {
     flexDirection: 'column',

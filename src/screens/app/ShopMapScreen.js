@@ -3,8 +3,8 @@
  * @flow strict-local
  */
 
-import React, { useEffect, useState, useContext } from 'react';
-import MapView, { Marker } from 'react-native-maps'
+import React, { useEffect, useState, useContext, version } from 'react';
+import MapView, { Marker, MAP_TYPES } from 'react-native-maps'
 import {
   SafeAreaView,
   StyleSheet,
@@ -28,6 +28,7 @@ import SwitchSelector from 'react-native-switch-selector';
 import { ConfirmDialog } from 'react-native-simple-dialogs';
 import icoHome from '../../res/assets/images/home.png'
 import icoShopmap from '../../res/assets/images/shopmap.png'
+import imgDiscount from '../../res/assets/images/discount1.png'
 
 const ShopMapScreen = ({ navigation, route }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -39,6 +40,9 @@ const ShopMapScreen = ({ navigation, route }) => {
   const [orderProductsbyShopid, setOrderProductsbyShopid] = useState([]);
   const [shopcategoryinfo] = useState(route.params.shopcategoryinfo);
   const [messageContent, setMessageContent] = useState('');
+  const [msgProductExchange, setMsgProductExchange] = useState ('');
+  const [msgHomeDelivery, setMsgHomeDelivery] = useState ('');
+  const [textLoadMessage, setTextLoadMessage] = useState('');
 
   const [region, setRegion] = useState({
     latitude: 15.480808256,
@@ -110,13 +114,13 @@ const ShopMapScreen = ({ navigation, route }) => {
           onSwitchChange(1, coords);
         }
       };
+
       Geolocation.getCurrentPosition(info => 
         {
           if(info.coords != undefined) {
             setRegion({latitude: info.coords.latitude, longitude: info.coords.longitude});
             setPayload({latitude:info.coords.latitude, longitude: info.coords.longitude, shopcategoryid: shopcategoryinfo.shopcategoryid});
             bootstrapAsync(info.coords);
-            console.log(info.coords);
           }
         },
         (error) => {
@@ -143,7 +147,7 @@ const ShopMapScreen = ({ navigation, route }) => {
     setSelectedIndex(index);
     let message = "Product price may vary as per shop";
     if( shopdata[index].shopcategoryid == 8 )
-      message = "Product price may vary as per shop. \n Age proof will be asked at the time of pickup. \n (ONlY 18+ IS ALLOWED)";
+      message = "Product price may vary as per shop.\nAge proof will be asked at time of pickup (ONlY 18+ IS ALLOWED)";
 
     setMessageContent(message);
     getProductbyShopid(index);
@@ -156,7 +160,7 @@ const ShopMapScreen = ({ navigation, route }) => {
     setAlertPassToSummary(false);
     navigation.navigate('Order Summary', {orderProducts: orderProductsbyShopid, shopname: shopdata[selectedIndex].shopname, shopcode: shopdata[selectedIndex].shopcode, discount: shopdata[selectedIndex].discount, shopid: shopdata[selectedIndex].shopid});
   }
-  
+
   const getProductbyShopid = async(index) => {
     let userToken = null;
         try {
@@ -168,8 +172,24 @@ const ShopMapScreen = ({ navigation, route }) => {
           const onSuccess = ({ data }) => {
             setLoading(false);
             setOrderProductsbyShopid(data);
-            if (data.products.length < 1)
-              setAlertNoProduct(true);            
+
+            console.log('------------------ shop id --------------');
+            console.log(data);
+            if( data.productexchange == 1 )
+              setMsgProductExchange("Product exchange is allowed as per shop policy.");
+            else
+              setMsgProductExchange("Product exchange is not allowed as per shop policy.");
+            if( data.homedelivery == 1 )
+              setMsgHomeDelivery("Home delivery is available");
+            else
+              setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
+              
+            let isProduct = true;
+            if( data.products.length < 1 )
+              isProduct = false;
+
+            if( isProduct == false )
+              setAlertNoProduct(true);
             else
               setAlertPassToSummary(true);
           }
@@ -179,6 +199,7 @@ const ShopMapScreen = ({ navigation, route }) => {
             setOrderProductsbyShopid([]);
           }
           setLoading(true);
+          setTextLoadMessage("");
           USERAPIKit.get('/user/cart/detail/shop/' + shopdata[index].shopid)
             .then(onSuccess)
             .catch(onFailure);
@@ -208,6 +229,9 @@ const ShopMapScreen = ({ navigation, route }) => {
 
     const onSuccess = ({ data }) => {
       setShopData(data.shops)
+      console.log("------------------ shop map data --------------------");
+      console.log(data);
+
       updateShopList(data.shops);
       setLoading(false);
 
@@ -236,7 +260,7 @@ const ShopMapScreen = ({ navigation, route }) => {
     }
 
     setLoading(true);
-    console.log(myCoords);
+    setTextLoadMessage("");
     var requestUrl = '/shopoperation/discount';
     if(value == 0){
       requestUrl = '/shopoperation/discount';
@@ -247,16 +271,16 @@ const ShopMapScreen = ({ navigation, route }) => {
     else{
       requestUrl = '/shopoperation/wholesaler';
     }
-   SHOPAPIKit.post(requestUrl, myCoords)
-   .then(onSuccess)
-   .catch(onFailure);
-
+    SHOPAPIKit.post(requestUrl, myCoords)
+    .then(onSuccess)
+    .catch(onFailure);
   }
+
   return (
     <>
       <View style={styles.container}>
         <Spinner
-          visible={loading} size="large" style={styles.spinnerStyle} />
+          visible={loading} size="large" textStyle = {{ fontSize: 18, fontWeight: "bold", color: "rgba(255,255,255,1)" }} textContent={textLoadMessage} />
         <MapView
           style={{ flex: 1, marginBottom: marginBottom }}
           onMapReady={onMapReady}
@@ -307,15 +331,22 @@ const ShopMapScreen = ({ navigation, route }) => {
             )}
         </MapView>
         <View>
-        <ConfirmDialog
+            <ConfirmDialog
                 dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
                 titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
                 title={messageContent}
                 visible={alertPassToSummary}
                 onTouchOutside={() => setAlertPassToSummary(false)}
-            >
+              >
               <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
-                <View style={{marginTop: 0, marginHorizontal: 30}}>
+                <Text style={{textAlign: "center"}}>
+                  {msgProductExchange}
+                </Text>
+                <Text style={{marginTop: 10, textAlign: "center"}}>
+                  {msgHomeDelivery}
+                </Text>
+
+                <View style={{marginTop: 20, marginHorizontal: 30}}>
                     <Button
                       buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
                       title="Ok"
@@ -345,7 +376,18 @@ const ShopMapScreen = ({ navigation, route }) => {
               </View>
             </ConfirmDialog>
         </View>
-        <SwitchSelector options={options} initial={1} onPress={value => onSwitchChange(value)} />
+        <SwitchSelector 
+          textColor={'#4cb344'} //'#7a44cf'
+          selectedColor={Colors.white}
+          buttonColor={'#4cb344'}
+          borderColor={'#4cb344'}
+          backgroundColor={'rgba(255,255,255,1)'}
+          style={{backgroundColor: 'rgba(255,255,255,1)', opacity: 1}}
+          hasPadding
+          options={options}
+          initial={1}
+          onPress={value => onSwitchChange(value)}
+        />
       </View>
     </>
   );

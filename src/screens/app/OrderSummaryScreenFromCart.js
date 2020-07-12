@@ -35,7 +35,8 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
     shopid: route.params.shopid,
   });
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(route.params.orderProducts);
+  const [orginProducts, setData] = useState(route.params.orderProducts.products);
+  const [orderProducts] = useState(route.params.orderProducts);
   const [subtotal, setSubTotal] = useState(0);
   const [quantity, setQuantity] = useState(0);
   const [total, setTotal] = useState(0);
@@ -47,6 +48,8 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
   const [showTime, setShowTime] = useState(false);
   const [orderpickupdate, setOrderPickupDate] = useState(moment(new Date()).format("YYYY-MM-DD"));  // u
   const [orderpickuptime, setOrderPickupTime] = useState(moment(new Date()).format("HH:mm:ss")); // not utc
+  const [textLoadMessage, setTextLoadMessage] = useState('');
+  const [alertOtherShopSelect, setAlertOtherShopSelect] = useState(false);
 
   const navigationiOptions = () => {
     navigation.setOptions({
@@ -100,16 +103,16 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
 
     const unsubscribe = navigation.addListener('focus', () => {
       updateOrderTime();
-      getTotalPrice(data.products);
+      getTotalPrice(orginProducts);
     });
     return unsubscribe;
   }, [navigation]);
   
-  const getTotalPrice = (data) => {
+  const getTotalPrice = (products) => {
     var tempTotal = 0;
     var tempQuantity = 0;
     var orderdiscount = 0;
-    data.forEach(element => {
+    products.forEach(element => {
       if (element.quantity != 'undefined' && element.quantity > 0) {
         var itemTotal = element.unitprice * element.quantity;
         element.total = itemTotal;
@@ -120,14 +123,16 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
     });
 
     orderdiscount = Number(orderdiscount.toFixed(2));  // float round
-    setData(data);
+    setData(products);
     setQuantity(tempQuantity);
     setSubTotal(tempTotal);
-    console.log('DiscountPercent:' + shopInfo.discount);
-    console.log('Discount: ' + orderdiscount);
-    
     setTotal(Number((tempTotal - orderdiscount).toFixed(2)));
     setDiscount(orderdiscount);
+  }
+
+  const onPressOtherShopOk = () => {
+    setAlertOtherShopSelect(false);
+    navigation.goBack();
   }
 
   // Confirm Place Order
@@ -141,13 +146,13 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
        ordertax: 0, 
        orderdiscount: shopInfo.discount, 
        ordertotal: total, 
-       orderquantity: data.length, 
+       orderquantity: orginProducts.length, 
        orderdescription: '', 
        orderpriorityid: 1, 
        orderpickuptime: formatedDate, 
        products: [] }
 
-    data.forEach(element => {
+    orginProducts.forEach(element => {
       if (element.quantity != 'undefined' && element.quantity > 0) {
         products.products.push({ "productid": element.productid, "quantity": element.quantity, "unitprice": element.unitprice })
       }
@@ -155,16 +160,26 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
 
     const onSuccess = ({ data }) => {
       setLoading(false);
-
-      navigation.dispatch(StackActions.popToTop());
-      navigation.navigate('Home');
-      Toast.show('Order placed successfully.');
+      console.log('--------------- ismanaged == 1 -----------------');
+      console.log(data);
+      if( orderProducts.ismanaged == 1 ) {
+        //https://ordermoduleapi1.herokuapp.com/userorder/order/<orderref> 
+        checkShopInventory(data.orderref);  // go to live order detail view
+      }
+      else {
+        Toast.show(data.message);
+        setTextLoadMessage("");
+        navigation.popToTop();  // go to Home view
+        navigation.navigate('Home');
+      }
     }
+
     const onFailure = error => {
       setLoading(false);
-      console.log(error)
+      console.log(error);
       Toast.show('Failed to place.');
     }
+    
     setLoading(true);
     console.log(products);
     SHOPAPIKit.post('/userorder/place', products)
@@ -172,6 +187,42 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
       .catch(onFailure);
 
     setAlert(false)
+  }
+
+  const checkShopInventory = async(orderref) => {
+    const onSuccess = ({ data }) => {
+      setLoading(false);
+      console.log('------------------ orderref successfull in shop inventory');
+      console.log(data);
+      setTextLoadMessage("");
+
+      if( data.statusid == 21 ) // noe available currently
+        setAlertOtherShopSelect(true);
+      else
+        gotoLiveOrderDetail(orderref);
+    }
+
+    const onFailure = error => {
+      setLoading(false);
+      console.log(error);
+      setTextLoadMessage("");
+      navigation.popToTop();  // go to Map view
+      navigation.navigate("Home");
+    }
+
+    setLoading(true);
+    setTextLoadMessage("Checking shop inventory");
+    SHOPAPIKit.get('/userorder/order/' + orderref)
+      .then(onSuccess)
+      .catch(onFailure);
+  }
+  
+  const gotoLiveOrderDetail = (orderref) => {
+    let item = {
+      orderref
+    }
+    navigation.popToTop();
+    navigation.navigate('Live Order Detail', item);
   }
 
   const orderProduct = () => {
@@ -270,12 +321,12 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
     <>
       <View style={styles.container}>
         <Spinner
-          visible={loading} size="large" style={styles.spinnerStyle} />
+          visible={loading} size="large" textStyle = {{ fontSize: 18, fontWeight: "bold", color: "rgba(255,255,255,1)" }} textContent={textLoadMessage} />
         <View style={{marginBottom: 10}}/>
         <FlatList
-          data={data}
+          data={orginProducts}
           keyExtractor={(item, index) => index.toString()}
-          renderItem={data ? renderItem : null} />
+          renderItem={orginProducts ? renderItem : null} />
         <View style={{ flexDirection: 'column', padding: 8, justifyContent: 'space-between' }}>
           <Text style={{ fontSize: 16, alignSelf: "center" }}>{shopInfo.shopname}</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginVertical: 1}}>
@@ -329,9 +380,9 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
           </View>
         </View>
         {
-          data.length != 0 ?
+          orginProducts.length != 0 ?
             <View style={styles.buttonContainer}>
-              <Button title='Place Order' onPress={orderProduct} />
+              <Button title='Check availability in shop' onPress={orderProduct} />
             </View> : null
         }
         <View>
@@ -357,6 +408,20 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
                       onPress={() => confirmPlaceOrder()}
                   />
                 </View>
+            </View>
+            </ConfirmDialog>
+            
+            <ConfirmDialog
+                dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, height: 180, alignSelf: "center" }}
+                titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
+                title={"Items are not available currently. Please check with different shop"}
+                visible={alertOtherShopSelect}
+            >
+            <View style={{alignSelf: "center", width: 100}}>
+              <Button
+                  title="Ok"
+                  onPress={() => onPressOtherShopOk()}
+              />
             </View>
             </ConfirmDialog>
         </View>
