@@ -447,20 +447,17 @@ const LiveOrderDetailScreen = ({ navigation, route }) => {
   }
   const updateLiveOrdersByPickup = () => {
 
-    let bUpdate = false;
     let pickOriginDateTime = originpickupdate + ' ' + originpickuptime; 
     let pickDateTime = orderpickupdate + ' ' + orderpickuptime;
 
-    if( pickOriginDateTime != pickDateTime )
-      bUpdate = true;
-
-    if(bUpdate == false) {  // is not changed
-      Toast.show('Nothing changed pickup date', Toast.SHORT);
-      return;
+    if( pickOriginDateTime == pickDateTime )  // normal pay(pickup date-time is not changed.)
+    {
+        payBill();
+        return;
     }
     
+    // =========== becasue picup date time is gone, pickup date-time is changed, call update api ======================//
     let updateOrderDetails = [];
-
     orderdetails.forEach(element => {
       const data = {
         "orderdetailid": element.orderdetailid,

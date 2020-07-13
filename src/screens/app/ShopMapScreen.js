@@ -28,7 +28,10 @@ import SwitchSelector from 'react-native-switch-selector';
 import { ConfirmDialog } from 'react-native-simple-dialogs';
 import icoHome from '../../res/assets/images/home.png'
 import icoShopmap from '../../res/assets/images/shopmap.png'
-import imgDiscount from '../../res/assets/images/discount1.png'
+import ic_homedeliveryok from '../../res/assets/images/ic_homedeliveryok.png'
+import ic_homedeliveryno from '../../res/assets/images/ic_homedeliveryno.png'
+import ic_exchangeok from '../../res/assets/images/ic_exchangeok.png'
+import ic_exchangeno from '../../res/assets/images/ic_exchangeno.png'
 
 const ShopMapScreen = ({ navigation, route }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -43,6 +46,8 @@ const ShopMapScreen = ({ navigation, route }) => {
   const [msgProductExchange, setMsgProductExchange] = useState ('');
   const [msgHomeDelivery, setMsgHomeDelivery] = useState ('');
   const [textLoadMessage, setTextLoadMessage] = useState('');
+  const [isDelivery, setDelivery] = useState(false);
+  const [isExchange, setExchange] = useState(false);
 
   const [region, setRegion] = useState({
     latitude: 15.480808256,
@@ -127,7 +132,7 @@ const ShopMapScreen = ({ navigation, route }) => {
           console.log(error); 
           bootstrapAsync();
         },
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 });
+        { enableHighAccuracy: false, timeout: 20000, maximumAge: 1000 });
     });
     return unsubscribe;
 
@@ -175,15 +180,22 @@ const ShopMapScreen = ({ navigation, route }) => {
 
             console.log('------------------ shop id --------------');
             console.log(data);
-            if( data.productexchange == 1 )
-              setMsgProductExchange("Product exchange is allowed as per shop policy.");
-            else
-              setMsgProductExchange("Product exchange is not allowed as per shop policy.");
-            if( data.homedelivery == 1 )
+            if( data.productexchange == 1 ) {
+              setExchange(true);
+              setMsgProductExchange("Product exchange is allowed as per shop policy");
+            }
+            else {
+              setExchange(false);
+              setMsgProductExchange("Product exchange is not allowed as per shop policy");
+            }
+            if( data.homedelivery == 1 ) {
+              setDelivery(true);
               setMsgHomeDelivery("Home delivery is available");
-            else
+            }
+            else {
+              setDelivery(false);
               setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
-              
+            }
             let isProduct = true;
             if( data.products.length < 1 )
               isProduct = false;
@@ -332,20 +344,52 @@ const ShopMapScreen = ({ navigation, route }) => {
         </MapView>
         <View>
             <ConfirmDialog
-                dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
+                dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 290, alignSelf: "center" }}
                 titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
                 title={messageContent}
                 visible={alertPassToSummary}
                 onTouchOutside={() => setAlertPassToSummary(false)}
               >
-              <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
-                <Text style={{textAlign: "center"}}>
-                  {msgProductExchange}
-                </Text>
-                <Text style={{marginTop: 10, textAlign: "center"}}>
-                  {msgHomeDelivery}
-                </Text>
+              <View style = {{marginTop: 10, marginBottom: -40, marginHorizontal: 0 }}>
+                <View style={{flexDirection: "row", justifyContent: "space-between"}}>
+                  <View>
+                    {isExchange == true ?
+                      <Image
+                        style={styles.icoexchange}
+                        source={ic_exchangeok}
+                      />
+                    :
+                      <Image
+                        style={styles.icoexchange}
+                        source={ic_exchangeno}
+                      />
+                    }
+                  </View>
+                  <Text style={{flex: 10, textAlign: "center"}}>
+                    {msgProductExchange}
+                  </Text>
+                </View>
+                <View style={{flexDirection: "row", marginTop: 10}}>
+                  <View>
+                    {isDelivery == true ?
+                      <Image
+                        style={styles.icodelivery}
+                        source={ic_homedeliveryok}
+                      />  
+                      :
+                      <Image
+                        style={styles.icodelivery}
+                        source={ic_homedeliveryno}
+                      />  
+                    }
+                  </View>
+                  <Text style={{flex: 10, marginTop: 10, textAlign: "center"}}>
+                    {msgHomeDelivery}
+                  </Text>
+                </View>
+                <View>
 
+                </View>
                 <View style={{marginTop: 20, marginHorizontal: 30}}>
                     <Button
                       buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
@@ -483,6 +527,20 @@ const styles = StyleSheet.create({
     width: 18,
     tintColor: '#fff',
     resizeMode: 'stretch',
+  },
+  icodelivery: {
+    marginTop: 10,
+    width: 38,
+    height: 28,
+    resizeMode: 'stretch',
+    marginRight: 10,
+  },
+  icoexchange: {
+    marginTop: 0,
+    width: 40,
+    height: 32,
+    resizeMode: 'stretch',
+    marginRight: 0,
   },
 });
 

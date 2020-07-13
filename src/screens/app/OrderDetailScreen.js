@@ -72,7 +72,7 @@ const OrderDetailScreen = ({ navigation, route }) => {
       if (userToken != null) {
         const onSuccess = ({ data }) => {
           setLoading(false);
-          // console.log(data);
+          console.log(data);
           Toast.show(data.message);
           
           let shopcategoryinfo = {
@@ -234,7 +234,12 @@ const OrderDetailScreen = ({ navigation, route }) => {
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between'}}>
               <Text style={{ fontSize: 16, alignSelf: "center" }}>Order Status: {order.status}</Text>
-              <Text style={{ fontSize: 16, alignSelf: "center" }}>Points: {order.orderpoints}</Text>
+              {
+                order.statusid == 20 ?
+                  <Text style={{ fontSize: 16, alignSelf: "center" }}>Refund: {order.refundamount}</Text>
+                  :
+                <Text style={{ fontSize: 16, alignSelf: "center" }}>Points: {order.orderpoints}</Text>
+              }
             </View>
           </View>
         </View>
