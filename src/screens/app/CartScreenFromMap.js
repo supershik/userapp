@@ -39,6 +39,8 @@ const CartScreenFromMap = ({ navigation, route }) => {
   const [shopInfo] = useState(route.params?.shopInfo);
   const [fromView] = useState(route.params?.fromView);
   const [ismanaged] = useState(route.params.ismanaged);
+  const [minordervalue] = useState(route.params.minordervalue);
+  
 
   const navigationiOptions = () => {
     navigation.setOptions({ 
@@ -152,8 +154,11 @@ const CartScreenFromMap = ({ navigation, route }) => {
   }
 
   const orderProduct = () => {
+    console.log(shopInfo);
+    console.log("ismanaged:", ismanaged);
+    console.log("minordervalue:", minordervalue);
     if( fromView == 'MapView' )
-      navigation.navigate('Order Summary From Map', {orderProducts: products, shopInfo: shopInfo, ismanaged: ismanaged, fromView: fromView});
+      navigation.navigate('Order Summary From Map', {orderProducts: products, shopInfo: shopInfo, ismanaged: ismanaged, minordervalue: minordervalue, fromView: fromView});
   }
 
   const renderCircleView = (item) => {

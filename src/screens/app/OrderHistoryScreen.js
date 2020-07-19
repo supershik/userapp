@@ -17,10 +17,23 @@ import {
 import Spinner from 'react-native-loading-spinner-overlay';
 import AsyncStorage from '@react-native-community/async-storage'
 import { SHOPAPIKit, setShopClientToken } from '../../utils/apikit';
+import SwitchSelector from 'react-native-switch-selector';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
+import { colors } from '../../res/style/colors'
 
 const OrderHistoryScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
-  const [orders, setOrders] = useState([]);
+  const [ordersAll, setOrders] = useState([]);
+  const [ordersCompleted, setOrdersCompleted] = useState([]);
+  const [ordersCancelled, setOrdersCancelled] = useState([]);
+  const [ordersRefunded, setOrdersRefunded] = useState([]);
+  const [switchIndex, setSwitchIndex] = useState(0);
+
+  const options = [
+    { label: 'Completed', value: "0" },
+    { label: 'Cancelled', value: "1" },
+    { label: 'Refunded', value: "2" }
+  ];
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -34,7 +47,7 @@ const OrderHistoryScreen = ({ navigation }) => {
         if (userToken != null) {
           const onSuccess = ({ data }) => {
             setLoading(false);
-            setOrders(data.orders);
+            setPartialOrders(data.orders);
             // console.log(data);
           }
           const onFailure = error => {
@@ -53,8 +66,35 @@ const OrderHistoryScreen = ({ navigation }) => {
 
   }, [navigation]);
 
+  const setPartialOrders = (orders) => {
+    let completedOrders = [];
+    let cancelledOrders = [];
+    let refundedOrders = [];
+    orders.forEach(element => {
+      if( element.orderstatus == "Completed" )
+        completedOrders.push(element);
+      else if( element.orderstatus == "Cancelled" )
+        cancelledOrders.push(element);
+      else if( element.orderstatus == "Refunded" )
+        refundedOrders.push(element);
+    });
+
+    setOrders(orders);
+    setOrdersCompleted(completedOrders);
+    setOrdersCancelled(cancelledOrders);
+    setOrdersRefunded(refundedOrders);
+
+    onSwitchChange(0);  // All data
+  }
   const onOrderPressed = (item) => {
     navigation.navigate('Order Detail', item)
+  }
+
+  const onSwitchChange = (value) => {
+    if(switchIndex == value)
+      return;
+    console.log(value);
+    setSwitchIndex(value);
   }
 
   const renderItem = ({ item }) => {
@@ -86,10 +126,35 @@ const OrderHistoryScreen = ({ navigation }) => {
         <Spinner
           visible={loading} size="large" style={styles.spinnerStyle} />
         <View style={{marginTop: 5}}/>
-        <FlatList
-          data={orders}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={orders ? renderItem : null} />
+        {
+          switchIndex == 1 ?
+            <FlatList
+            data={ordersCancelled}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={ordersCancelled ? renderItem : null} />
+          : switchIndex == 2 ?
+            <FlatList
+            data={ordersRefunded}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={ordersRefunded ? renderItem : null} />
+            : 
+            <FlatList
+            data={ordersCompleted}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={ordersCompleted ? renderItem : null} />
+        }
+        <SwitchSelector
+          textColor={'#2396f3'} //'#7a44cf'
+          selectedColor={Colors.white}
+          buttonColor={'#2396f3'}
+          borderColor={'#146fb9'}
+          backgroundColor={'rgba(255,255,255,1)'}
+          style={{backgroundColor: '#f2f2f2', opacity: 1}}
+          hasPadding
+          options={options}
+          initial={0}
+          onPress={value => onSwitchChange(value)}
+        />
       </View>
     </>
   );

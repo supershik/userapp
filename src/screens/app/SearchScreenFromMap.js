@@ -33,6 +33,8 @@ const SearchScreenFromMap = ({ navigation, route }) => {
   const [shopInfo] = useState(route.params.shopInfo);
   const [fromView] = useState(route.params.fromView);
   const [ismanaged] = useState(route.params.ismanaged);
+  const [minordervalue] = useState(route.params.minordervalue);
+  
 
   const navigationiOptions = () => {
     navigation.setOptions({ 
@@ -47,7 +49,7 @@ const SearchScreenFromMap = ({ navigation, route }) => {
       headerRight: () => (
         <View style={{flexDirection: 'row', alignSelf: "center", marginRight: 5}}>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Cart Screen From Map', {shopInfo: shopInfo, ismanaged: ismanaged, fromView: fromView})}>
+            onPress={() => navigation.navigate('Cart Screen From Map', {shopInfo: shopInfo, ismanaged: ismanaged, minordervalue: minordervalue, fromView: fromView})}>
             <Image
               source={addcart}
               style={styles.addCartIcon}

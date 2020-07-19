@@ -122,6 +122,9 @@ const OrderSummaryScreenFromCart = ({ navigation, route }) => {
       }
     });
 
+    if( tempTotal < orderProducts.minordervalue )
+      orderdiscount = 0;
+
     orderdiscount = Number(orderdiscount.toFixed(2));  // float round
     setData(products);
     setQuantity(tempQuantity);

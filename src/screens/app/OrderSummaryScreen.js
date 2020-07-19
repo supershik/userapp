@@ -124,6 +124,9 @@ const OrderSummaryScreen = ({ navigation, route }) => {
       }
     });
 
+    if( tempTotal < orderProducts.minordervalue ) // check if calculate discount 
+      orderdiscount = 0;
+
     orderdiscount = Number(orderdiscount.toFixed(2));  // float round
     setData(products);
     setQuantity(tempQuantity);

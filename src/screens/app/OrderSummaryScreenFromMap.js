@@ -34,6 +34,7 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
     discount: route.params.shopInfo.discount
   });
   const [ismanaged] = useState(route.params.ismanaged);
+  const [minordervalue] = useState(route.params.minordervalue);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(route.params.orderProducts);
   const [subtotal, setSubTotal] = useState(0);
@@ -121,6 +122,9 @@ const OrderSummaryScreenFromMap = ({ navigation, route }) => {
         orderdiscount += shop.discount*element.unitprice*element.quantity*0.01;
       }
     });
+
+    if( tempTotal < minordervalue )
+      orderdiscount = 0;
 
     orderdiscount = Number(orderdiscount.toFixed(2));  // float round
     setData(data);

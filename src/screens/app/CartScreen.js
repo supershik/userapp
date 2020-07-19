@@ -80,7 +80,7 @@ const CartScreen = ({ navigation, route }) => {
         if (userToken != null) {
           const onSuccess = ({ data }) => {
             setLoading(false);
-            console.log(data);
+            // console.log(data);
             getTotalPrice(data.products);
           }
           const onFailure = error => {
@@ -149,7 +149,7 @@ const CartScreen = ({ navigation, route }) => {
       }
     });
     setData(products);
-    console.log(products);
+    // console.log(products);
     setTotal(tempTotal);
   }
   const orderProduct = () => {

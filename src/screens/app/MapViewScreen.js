@@ -10,6 +10,7 @@ import {
   StyleSheet,
   View,
   Text,
+  Image,
   Button,
 } from 'react-native';
 import { Searchbar } from 'react-native-paper';
@@ -19,6 +20,11 @@ import Spinner from 'react-native-loading-spinner-overlay';
 import { ConfirmDialog } from 'react-native-simple-dialogs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import USERAPIKit, { SHOPAPIKit, setUserClientToken } from '../../utils/apikit';
+import ic_homedeliveryok from '../../res/assets/images/ic_homedeliveryok.png'
+import ic_homedeliveryno from '../../res/assets/images/ic_homedeliveryno.png'
+import ic_exchangeok from '../../res/assets/images/ic_exchangeok.png'
+import ic_exchangeno from '../../res/assets/images/ic_exchangeno.png'
+import ic_discount from '../../res/assets/images/ic_discount.png'
 
 import {
   Colors,
@@ -30,23 +36,7 @@ const MapViewScreen = ({ navigation }) => {
   const [shopdata, setData] = useState([]);
   const [markers, setMarkers] = useState([]);
   const [query, setQuery] = useState('');
-
-  const [region, setRegion] = useState({
-    latitude: 15.480808256,
-    longitude: 73.82310486,
-    latitudeDelta: 0.01,
-    longitudeDelta: 0.01,
-  })
-  const [shop, setShop] = useState({
-    index: 0,
-    alert: false,
-    wholesaler: 0,
-    bulkorder: 0,
-    shopname: '',
-    year: 1990
-  })
   const [marginBottom, setMarginBottom] = useState(0);
-  
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [alertPassToSummary, setAlertPassToSummary] = useState(false);
   const [alertNoProduct, setAlertNoProduct] = useState(false);
@@ -55,6 +45,30 @@ const MapViewScreen = ({ navigation }) => {
   const [msgProductExchange, setMsgProductExchange] = useState ('');
   const [msgHomeDelivery, setMsgHomeDelivery] = useState ('');
   const [ismanaged, setManaged] = useState(0);
+  const [minordervalue, setMinOrder] = useState(0);
+  
+  const [isDelivery, setDelivery] = useState(false);
+  const [isExchange, setExchange] = useState(false);
+  const [isAlertOnlineShop, setAlertOnlineShop] = useState(false);
+  const [msgMinOrderValue, setMsgMinOrderValue] = useState ('');
+  const [isMinOrderValue, setMinOrderValue] = useState(false);
+
+  const [region, setRegion] = useState({
+    latitude: 15.480808256,
+    longitude: 73.82310486,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  })
+
+  const [shop, setShop] = useState({
+    index: 0,
+    alert: false,
+    wholesaler: 0,
+    bulkorder: 0,
+    shopname: '',
+    year: 1990
+  })
+ 
   useEffect(() => {
     setShop({
       alert: false
@@ -97,6 +111,7 @@ const MapViewScreen = ({ navigation }) => {
     console.log(coords);
       const payload = { latitude: coords.latitude, longitude: coords.longitude };
       const onSuccess = ({ data }) => {
+        console.log(data);
         setData(data.shops)
         updateShopList(data.shops);
         setLoading(false);
@@ -122,14 +137,18 @@ const MapViewScreen = ({ navigation }) => {
     let tempMarkers =[];
     shopData.forEach(element => {
       if (element.shopname != 'undefined') {
-        tempMarkers.push({ latitude: element.latitude, longitude: element.longitude, title: element.shopname, subtitle: element.shopname })
+        tempMarkers.push({ latitude: element.latitude, longitude: element.longitude, title: element.shopname, subtitle: element.shopname, isonline: element.isonline })
       }
     });
     setMarkers(tempMarkers);
   }
 
   const onPressMarker = (index) => {
-    console.log("marker index=" + index);
+    if( shopdata[index].isonline == 0 ) {
+      setAlertOnlineShop(true);
+      return;
+    }
+
     setSelectedIndex(index);
     let message = "Product price may vary as per shop";
     if( shopdata[index].shopcategoryid == 8 )
@@ -157,7 +176,7 @@ const MapViewScreen = ({ navigation }) => {
       const onSuccess = ({ data }) => {                
         setData(data.shops)
         updateShopList(data.shops);
-        // console.log(data);
+        console.log(data);
         if(data.shops.length < 1) {
           let message = 'No Nearest shop' // value = 1;
           Toast.show(message);
@@ -190,8 +209,8 @@ const MapViewScreen = ({ navigation }) => {
     setAlertPassToSummary(false);
 
     let shopInfo = shopdata[selectedIndex];
-    console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: ismanaged, fromView: 'MapView'});
-    navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: ismanaged, fromView: 'MapView'});
+    console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: ismanaged, minordervalue: minordervalue, fromView: 'MapView'});
+    navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: ismanaged, minordervalue: minordervalue, fromView: 'MapView'});
   }
 
   // call only to get ismanaged
@@ -208,38 +227,20 @@ const MapViewScreen = ({ navigation }) => {
             setLoading(false);
             setOrderProductsbyShopid(data);
 
-            console.log('------------------ shop id --------------');
-            console.log(data);
-            if( data.productexchange == 1 )
-              setMsgProductExchange("Product exchange is allowed as per shop policy.");
-            else
-              setMsgProductExchange("Product exchange is not allowed as per shop policy.");
-            if( data.homedelivery == 1 )
-              setMsgHomeDelivery("Home delivery is available");
-            else
-              setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
-            
-            setManaged(data.ismanaged); // is used in order summary
-            
-            console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: data.ismanaged, fromView: 'MapView'});
-            navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: data.ismanaged, fromView: 'MapView'});
-
-            // let isProduct = true;
-            // if( data.products.length < 1 )
-            //   isProduct = false;
-
-            // if( isProduct == false )
-            //   setAlertNoProduct(true);
-            // else
-            //   setAlertPassToSummary(true);
-          }
-          const onFailure = error => {
-            setLoading(false);
-            // setAlertNoProduct(true);
-            setOrderProductsbyShopid([]);
+            console.log(shopInfo);
+            updateShopInfo(shopInfo);
           
-            console.log('pressed marker: ', {shopInfo: shopInfo, ismanaged: 0, fromView: 'MapView'});
-            navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: 0, fromView: 'MapView'});
+          }
+
+          const onFailure = error => {
+            console.log(error);
+            setLoading(false);
+            if(error.toString().includes('409')) { // no products
+              updateShopInfo(shopInfo);
+            }
+            //setAlertNoProduct(true);
+            //navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: data.ismanaged, minordervalue: data.minordervalue, fromView: 'MapView'});
+            setOrderProductsbyShopid([]);
           }
 
           setLoading(true);
@@ -252,6 +253,53 @@ const MapViewScreen = ({ navigation }) => {
         }
   }
 
+  const updateShopInfo = (shopInfo) => {
+    console.log('------------------ shop id --------------');
+    console.log(shopInfo);
+    
+    setManaged(shopInfo.ismanaged);
+    setMinOrder(shopInfo.minordervalue);
+
+    if( shopInfo.productexchange == 1 ) {
+      setExchange(true);
+      setMsgProductExchange("Product exchange is allowed as per shop policy");
+    }
+    else {
+      setExchange(false);
+      setMsgProductExchange("Product exchange is not allowed as per shop policy");
+    }
+    if( shopInfo.homedelivery == 1 ) {
+      setDelivery(true);
+      setMsgHomeDelivery("Home delivery is available");
+    }
+    else {
+      setDelivery(false);
+      setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
+    }
+    if( shopInfo.discount > 0 && shopInfo.minordervalue > 0 ) {
+      setMinOrderValue(true);
+      setMsgMinOrderValue(Number(shopInfo.discount.toFixed(2)) + "% Discount available for order above ₹" + Number(shopInfo.minordervalue.toFixed(2)));
+    }
+    else if( shopInfo.discount > 0 && shopInfo.minordervalue == 0 ) {
+      setMinOrderValue(true);
+      setMsgMinOrderValue(Number(shopInfo.discount.toFixed(2)) + "% Discount available");
+    }
+    else {
+      setMinOrderValue(true);
+      setMsgMinOrderValue("No Discount available");
+    }
+    
+    // let isProduct = true;
+    // if( shopInfo.products.length < 1 )
+    //   isProduct = false;
+
+    // if( isProduct == false ) {  // move to search shop screen without any condition
+    //   //setAlertNoProduct(true);
+    //   navigation.navigate('Search Screen From Map', {shopInfo: shopInfo, ismanaged: shopInfo.ismanaged, minordervalue: shopInfo.minordervalue, fromView: 'MapView'});
+    // }
+    // else
+      setAlertPassToSummary(true);
+  }
   return (
     <>
       <View style={styles.container}>
@@ -286,22 +334,41 @@ const MapViewScreen = ({ navigation }) => {
                 key={index}
                 coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}                
                 onPress={() => onPressMarker(index)}>
-                <View >
-                  <View
-                    style={styles.callout}>
-                    <Text style={styles.titleText}>
-                      {marker.title}
-                    </Text>
-                  </View>                  
-                  <View
-                    style={{alignSelf:'center'}}>
-                    <MaterialCommunityIcons
-                        name="map-marker"
-                        color="red"
-                        size={40}
-                      />
-                  </View>
-                </View>
+                  { marker.isonline == 1 ? 
+                    <View >
+                      <View
+                        style={styles.markerOnline}>
+                        <Text style={styles.titleText}>
+                          {marker.title}
+                        </Text>
+                      </View>                  
+                      <View
+                        style={{alignSelf:'center'}}>
+                        <MaterialCommunityIcons
+                            name="map-marker"
+                            color="red"
+                            size={40}
+                          />
+                      </View>
+                    </View>
+                    :
+                    <View>
+                      <View
+                        style={styles.markerOffline}>
+                        <Text style={styles.titleTextGray}>
+                          {marker.title}
+                        </Text>
+                      </View>                  
+                      <View
+                        style={{alignSelf:'center'}}>
+                        <MaterialCommunityIcons
+                            name="map-marker"
+                            color="rgba(160,160,160,1)"
+                            size={40}
+                          />
+                      </View>
+                    </View>
+                  }
                 <MapView.Callout
                   tooltip={true}
                   />
@@ -322,20 +389,64 @@ const MapViewScreen = ({ navigation }) => {
           </View>
         </Dialog>
       </View>
+      <View>
       <ConfirmDialog
-          dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
+          dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 290, alignSelf: "center" }}
           titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
-          title={messageContent}
+          title=""
           visible={alertPassToSummary}
           onTouchOutside={() => setAlertPassToSummary(false)}
         >
-        <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
-          <Text style={{textAlign: "center"}}>
-            {msgProductExchange}
-          </Text>
-          <Text style={{marginTop: 10, textAlign: "center"}}>
-            {msgHomeDelivery}
-          </Text>
+        <View style = {{marginTop: 10, marginBottom: -40, marginHorizontal: 0 }}>
+          <View style={{flexDirection: "row", justifyContent: "space-between"}}>
+            <View>
+              {isExchange == true ?
+                <Image
+                  style={styles.icoexchange}
+                  source={ic_exchangeok}
+                />
+              :
+                <Image
+                  style={styles.icoexchange}
+                  source={ic_exchangeno}
+                />
+              }
+            </View>
+            <Text style={{flex: 10, textAlign: "center"}}>
+              {msgProductExchange}
+            </Text>
+          </View>
+          <View style={{flexDirection: "row", marginTop: 10}}>
+            <View>
+              {isDelivery == true ?
+                <Image
+                  style={styles.icodelivery}
+                  source={ic_homedeliveryok}
+                />  
+                :
+                <Image
+                  style={styles.icodelivery}
+                  source={ic_homedeliveryno}
+                />  
+              }
+            </View>
+            <Text style={{flex: 10, marginTop: 10, textAlign: "center"}}>
+              {msgHomeDelivery}
+            </Text>
+          </View>
+          {isMinOrderValue == true ?
+            <View style={{flexDirection: "row", marginTop: 10}}>
+              <Image
+                style={styles.icdiscount}
+                source={ic_discount}
+              />
+              <Text style={{flex: 10, marginTop: 10, textAlign: "center"}}>
+                {msgMinOrderValue}
+              </Text>
+            </View>
+            :
+            null
+          }
 
           <View style={{marginTop: 20, marginHorizontal: 30}}>
               <Button
@@ -347,6 +458,7 @@ const MapViewScreen = ({ navigation }) => {
           </View>
         </View>
       </ConfirmDialog>
+
       <ConfirmDialog
                 dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
                 titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
@@ -365,6 +477,25 @@ const MapViewScreen = ({ navigation }) => {
                 </View>
               </View>
       </ConfirmDialog>
+      <ConfirmDialog
+            dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
+            titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
+            title="Shop is not accepting orders"
+            visible={isAlertOnlineShop}
+            onTouchOutside={() => setAlertOnlineShop(false)}
+        >
+          <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
+            <View style={{marginTop: 10, marginHorizontal: 30}}>
+                <Button
+                  buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
+                  title="Ok"
+                  titleStyle={{ fontSize: 14 }}
+                  onPress={() => setAlertOnlineShop(false)}
+              />
+            </View>
+          </View>
+      </ConfirmDialog>
+      </View>
     </>
   );
 };
@@ -377,8 +508,14 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
-  callout: {
+  markerOnline: {
     backgroundColor: "rgba(255,0,0,1)",
+    borderRadius: 4,
+    padding: 1,
+    justifyContent: "center"
+  },
+  markerOffline: {
+    backgroundColor: "lightgray",
     borderRadius: 4,
     padding: 1,
     justifyContent: "center"
@@ -386,6 +523,13 @@ const styles = StyleSheet.create({
   titleText: {
     paddingHorizontal: 10,
     color: "rgba(255,255,255,1)",
+    textAlign: "center",
+    fontSize: 14,
+    flex: 1,
+  },
+  titleTextGray: {
+    paddingHorizontal: 10,
+    color: "rgba(64,64,64,1)",
     textAlign: "center",
     fontSize: 14,
     flex: 1,
@@ -429,6 +573,27 @@ const styles = StyleSheet.create({
   searchbar: {
     margin: 4,
   },
+  icodelivery: {
+    marginTop: 10,
+    width: 38,
+    height: 28,
+    resizeMode: 'stretch',
+    marginRight: 10,
+  },
+  icoexchange: {
+    marginTop: 0,
+    width: 40,
+    height: 32,
+    resizeMode: 'stretch',
+    marginRight: 0,
+  },
+  icdiscount: {
+    marginTop: 0,
+    width: 35,
+    height: 35,
+    resizeMode: 'stretch',
+    marginRight: 0,
+  }
 });
 
 export default MapViewScreen;

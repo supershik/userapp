@@ -32,6 +32,7 @@ import ic_homedeliveryok from '../../res/assets/images/ic_homedeliveryok.png'
 import ic_homedeliveryno from '../../res/assets/images/ic_homedeliveryno.png'
 import ic_exchangeok from '../../res/assets/images/ic_exchangeok.png'
 import ic_exchangeno from '../../res/assets/images/ic_exchangeno.png'
+import ic_discount from '../../res/assets/images/ic_discount.png'
 
 const ShopMapScreen = ({ navigation, route }) => {
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -48,6 +49,10 @@ const ShopMapScreen = ({ navigation, route }) => {
   const [textLoadMessage, setTextLoadMessage] = useState('');
   const [isDelivery, setDelivery] = useState(false);
   const [isExchange, setExchange] = useState(false);
+  const [isAlertOnlineShop, setAlertOnlineShop] = useState(false);
+  const [msgMinOrderValue, setMsgMinOrderValue] = useState ('');
+  const [isMinOrderValue, setMinOrderValue] = useState(false);
+  
 
   const [region, setRegion] = useState({
     latitude: 15.480808256,
@@ -142,14 +147,20 @@ const ShopMapScreen = ({ navigation, route }) => {
     let newMarks = [];
     shopData.forEach(element => {
       if (element.shopname != 'undefined') {
-        newMarks.push({ latitude: element.latitude, longitude: element.longitude, title: element.shopname, distance: element.distance, discount: element.discount, rating: element.rating })
+        newMarks.push({ latitude: element.latitude, longitude: element.longitude, title: element.shopname, distance: element.distance, discount: element.discount, rating: element.rating, isonline: element.isonline })
       }
     });
     setMarkers(newMarks);
   }
 
   const onPressMarker = (index) => {
+    if( shopdata[index].isonline == 0 ) {
+      setAlertOnlineShop(true);
+      return;
+    }
+
     setSelectedIndex(index);
+    
     let message = "Product price may vary as per shop";
     if( shopdata[index].shopcategoryid == 8 )
       message = "Product price may vary as per shop.\nAge proof will be asked at time of pickup (ONlY 18+ IS ALLOWED)";
@@ -167,6 +178,8 @@ const ShopMapScreen = ({ navigation, route }) => {
   }
 
   const getProductbyShopid = async(index) => {
+    let shopInfo = shopdata[index];
+    console.log(shopInfo);
     let userToken = null;
         try {
           userToken = await AsyncStorage.getItem('userToken')
@@ -188,6 +201,7 @@ const ShopMapScreen = ({ navigation, route }) => {
               setExchange(false);
               setMsgProductExchange("Product exchange is not allowed as per shop policy");
             }
+
             if( data.homedelivery == 1 ) {
               setDelivery(true);
               setMsgHomeDelivery("Home delivery is available");
@@ -196,6 +210,20 @@ const ShopMapScreen = ({ navigation, route }) => {
               setDelivery(false);
               setMsgHomeDelivery("Home delivery is not available, Only shop pick up");
             }
+
+            if( shopInfo.discount > 0 && shopInfo.minordervalue > 0 ) {
+              setMinOrderValue(true);
+              setMsgMinOrderValue(Number(shopInfo.discount.toFixed(2)) + "% Discount available for order above ₹" + Number(shopInfo.minordervalue.toFixed(2)));
+            }
+            else if( shopInfo.discount > 0 && shopInfo.minordervalue == 0 ) {
+              setMinOrderValue(true);
+              setMsgMinOrderValue(Number(shopInfo.discount.toFixed(2)) + "% Discount available");
+            }
+            else {
+              setMinOrderValue(true);
+              setMsgMinOrderValue("No Discount available");
+            }
+            
             let isProduct = true;
             if( data.products.length < 1 )
               isProduct = false;
@@ -316,25 +344,47 @@ const ShopMapScreen = ({ navigation, route }) => {
                 key={index}
                 coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}                
                 onPress={() => onPressMarker(index)}>
-                <View >
-                <View
-                    style={styles.callout}>
-                    <Text style={styles.titleText}>
-                      {marker.title}
-                    </Text>
-                    <Text style={styles.shopMarkInfo}>
-                      {marker.distance}Km  {marker.discount}%  {marker.rating}
-                    </Text>
-                  </View>              
-                  <View
-                    style={{alignSelf:'center'}}>
-                    <MaterialCommunityIcons
-                        name="map-marker"
-                        color="red"
-                        size={40}
-                      />
+                { marker.isonline == 1 ? 
+                  <View>
+                    <View
+                      style={styles.markerOnline}>
+                      <Text style={styles.titleText}>
+                        {marker.title}
+                      </Text>
+                      <Text style={styles.shopMarkInfo}>
+                        {marker.distance}Km  {marker.discount}%  {marker.rating}
+                      </Text>
+                    </View>              
+                    <View
+                      style={{alignSelf:'center'}}>
+                      <MaterialCommunityIcons
+                          name="map-marker"
+                          color="red"
+                          size={40}
+                        />
+                    </View>
                   </View>
-                </View>
+                  : 
+                  <View >
+                    <View
+                      style={styles.markerOffline}>
+                      <Text style={styles.titleTextGray}>
+                        {marker.title}
+                      </Text>
+                      <Text style={styles.shopMarkInfoOffile}>
+                        {marker.distance}Km  {marker.discount}%  {marker.rating}
+                      </Text>
+                    </View>              
+                    <View
+                      style={{alignSelf:'center'}}>
+                      <MaterialCommunityIcons
+                          name="map-marker"
+                          color="rgba(160,160,160,1)"
+                          size={40}
+                        />
+                    </View>
+                  </View>
+                }
                 <MapView.Callout
                   tooltip={true}
                   />
@@ -387,9 +437,20 @@ const ShopMapScreen = ({ navigation, route }) => {
                     {msgHomeDelivery}
                   </Text>
                 </View>
-                <View>
+                {isMinOrderValue == true ?
+                  <View style={{flexDirection: "row", marginTop: 10}}>
+                    <Image
+                      style={styles.icdiscount}
+                      source={ic_discount}
+                    />
+                    <Text style={{flex: 10, marginTop: 10, textAlign: "center"}}>
+                      {msgMinOrderValue}
+                    </Text>
+                  </View>
+                  :
+                  null
+                }
 
-                </View>
                 <View style={{marginTop: 20, marginHorizontal: 30}}>
                     <Button
                       buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
@@ -419,14 +480,33 @@ const ShopMapScreen = ({ navigation, route }) => {
                 </View>
               </View>
             </ConfirmDialog>
+
+            <ConfirmDialog
+                dialogStyle={{ backgroundColor: "rgba(255,255,255,1)", borderRadius: 16, width: 260, alignSelf: "center" }}
+                titleStyle={{ textAlign: "center", marginTop: 30, fontSize: 16 }}
+                title="Shop is not accepting orders"
+                visible={isAlertOnlineShop}
+                onTouchOutside={() => setAlertOnlineShop(false)}
+            >
+              <View style = {{marginTop: 0, marginBottom: -40, marginHorizontal: 10 }}>
+                <View style={{marginTop: 10, marginHorizontal: 30}}>
+                    <Button
+                      buttonStyle={{backgroundColor: "rgba(130, 130, 128,1)" }}
+                      title="Ok"
+                      titleStyle={{ fontSize: 14 }}
+                      onPress={() => setAlertOnlineShop(false)}
+                  />
+                </View>
+              </View>
+            </ConfirmDialog>
         </View>
         <SwitchSelector 
-          textColor={'#4cb344'} //'#7a44cf'
+          textColor={'#2396f3'} //'#7a44cf'
           selectedColor={Colors.white}
-          buttonColor={'#4cb344'}
-          borderColor={'#4cb344'}
+          buttonColor={'#2396f3'}
+          borderColor={'#146fb9'}
           backgroundColor={'rgba(255,255,255,1)'}
-          style={{backgroundColor: 'rgba(255,255,255,1)', opacity: 1}}
+          style={{backgroundColor: '#f2f2f2', opacity: 1}}
           hasPadding
           options={options}
           initial={1}
@@ -445,15 +525,28 @@ const styles = StyleSheet.create({
   map: {
     ...StyleSheet.absoluteFillObject,
   },
-  callout: {
+  markerOnline: {
     backgroundColor: "rgba(255,0,0,1)",
     borderRadius: 4,
     padding: 1,
     justifyContent: "center"
   },
+  markerOffline: {
+    backgroundColor: "lightgray",
+    borderRadius: 4,
+    padding: 1,
+    justifyContent: "center"
+  },
   titleText: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     color: "rgba(255,255,255,1)",
+    textAlign: "center",
+    fontSize: 12,
+    flex: 1,
+  },
+  titleTextGray: {
+    paddingHorizontal: 10,
+    color: "rgba(64,64,64,1)",
     textAlign: "center",
     fontSize: 12,
     flex: 1,
@@ -461,6 +554,13 @@ const styles = StyleSheet.create({
   shopMarkInfo: {
     paddingHorizontal: 10,
     color: "rgba(255,255,255,1)",
+    fontSize: 12,
+    textAlign: "right",
+    flex: 1,
+  },
+  shopMarkInfoOffile: {
+    paddingHorizontal: 10,
+    color: "rgba(64,64,64,1)",
     fontSize: 12,
     textAlign: "right",
     flex: 1,
@@ -539,6 +639,13 @@ const styles = StyleSheet.create({
     marginTop: 0,
     width: 40,
     height: 32,
+    resizeMode: 'stretch',
+    marginRight: 0,
+  },
+  icdiscount: {
+    marginTop: 0,
+    width: 35,
+    height: 35,
     resizeMode: 'stretch',
     marginRight: 0,
   },

@@ -52,6 +52,23 @@ const RegisterScreen = ({ navigation }) => {
     const { signIn, signOut } = useContext(AuthContext); // should be signUp
 
     const handleSignUp = () => {
+        let mobile = "9158369333";
+        console.log(mobile);
+
+        const onSuccessMobile = ({ data }) => {
+            console.log(data);
+            setLoading(false);
+        }
+        const onFailureMobile = error => {
+            console.log(error);
+            setLoading(false);
+        }
+        setLoading(true);
+        USERAPIKit.get('/validation/mobile/' + mobile)
+            .then(onSuccessMobile)
+            .catch(onFailureMobile);
+            return;
+            
         // https://indicative.adonisjs.com
         if (onNameChanged() == false){
             Toast.show('Enter your name');
@@ -271,6 +288,7 @@ const RegisterScreen = ({ navigation }) => {
             setIcEye("visibility-off");
         setIsPassword(!isPassword);
     };
+    
     const sendPhoneNumber = (mobile) => {
         if (mobile.length < 10)
             return;

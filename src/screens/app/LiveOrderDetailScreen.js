@@ -87,6 +87,7 @@ const LiveOrderDetailScreen = ({ navigation, route }) => {
     statusid: 0,
     orderpickuptime: '',
     discountpercentage: 0,
+    minordervalue: 0,
     orderdetails: [],
   })
 
@@ -131,6 +132,7 @@ const LiveOrderDetailScreen = ({ navigation, route }) => {
 
         if (userToken != null) {
           const onSuccess = ({ data }) => {
+            console.log('--------------------');
             setOrderInit(data);
             setOrderTotalOrigin(data);
             setOrderDetails(data.orderdetails);
@@ -207,6 +209,9 @@ const LiveOrderDetailScreen = ({ navigation, route }) => {
       }
     })
 
+    if( ordersubtotal < data.minordervalue ) // check if calculate discount 
+      orderdiscount = 0;
+
     orderdiscount = Number(orderdiscount.toFixed(2));  // float round
     ordertotal = ordersubtotal-orderdiscount;
 
@@ -221,6 +226,7 @@ const LiveOrderDetailScreen = ({ navigation, route }) => {
       statusid: data.statusid,
       orderpickuptime: data.orderpickuptime,
       discountpercentage: data.discountpercentage,
+      minordervalue: data.minordervalue,
       orderdetails: [],
     };
 
