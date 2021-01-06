@@ -22,7 +22,7 @@
     "@react-navigation/drawer": "^5.7.7",
     "@react-navigation/native": "^5.4.0",
     "@react-navigation/stack": "^5.3.7",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "cashfreereactnativepg": "^3.2.0",
     "indicative": "^7.4.4",
     "moment": "^2.26.0",
